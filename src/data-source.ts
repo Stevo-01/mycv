@@ -1,18 +1,26 @@
 import { DataSource } from 'typeorm';
+import { User } from './users/user.entity';
+import { Report } from './reports/report.entity';
+import * as dotenv from 'dotenv';
+import { Tag } from './tags/tag.entity';
 
-export default new DataSource({
-  type: 'sqlite',
-  database: 'db.sqlite',
-  entities: ['src/**/*.entity.ts'],
-  // migrations: [
-  // /*...*/
-  // ],
-  migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
-  migrationsRun: true, // ← Auto-run migrations on startup
+// Load .env.development
+dotenv.config({ path: '.env.development' });
+
+const AppDataSource = new DataSource({
+  type: 'postgres',
+  host: 'localhost',  // Using localhost for CLI (outside Docker)
+  port: parseInt(process.env.DB_PORT || '5432'),
+  username: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'mycv_password',
+  database: process.env.DB_NAME || 'postgres',
+  
+  entities: [User, Report, Tag],
+  migrations: ['src/database/migrations/**/*{.ts,.js}'],
+  migrationsTableName: 'migrations',
+  migrationsRun: false,
   synchronize: false,
-  migrationsTableName: 'dev_migration_table',
+  logging: process.env.NODE_ENV === 'development',
 });
-// npx typeorm-ts-node-esm migration:generate ./src/migrations/update-post-table -d ./src/data-source.ts
-// npx typeorm-ts-node-esm migration:run -- -d path-to-datasource-config
-// npx typeorm-ts-node-commonjs migration:run -- -d path-to-datasource-config
-// npm run typeorm -- migration:generate ./migrations/initial-schema -d
+
+export default AppDataSource;

@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: mycv-postgres
+    restart: unless-stopped
+    env_file:
+      - ./.env.development
+
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mycv-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mycv:
+    build:
+      context: .
+      # Location of the dockerfile
+      dockerfile: Dockerfile
+#    container_name: mycv-app-dev
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    env_file:
+      - ./.env.development
+#    environment:
+#      - NODE_ENV=development
+#      - PORT=3000
+#      - COOKIE_KEY=${COOKIE_KEY:-your-secret-cookie-key-change-this}
+    volumes:
+      # Mount source code for hot reload
+      - .:/mycv
+      - /mycv/node_modules
+    command: npm run start:dev
+    networks:
+      - mycv-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+networks:
+  mycv-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  data:
