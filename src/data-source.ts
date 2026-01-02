@@ -9,7 +9,7 @@ dotenv.config({ path: '.env.development' });
 
 const AppDataSource = new DataSource({
   type: 'postgres',
-  host: 'localhost',  // Using localhost for CLI (outside Docker)
+  host: process.env.DB_HOST || 'postgres',
   port: parseInt(process.env.DB_PORT || '5432'),
   username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'mycv_password',
