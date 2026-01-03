@@ -1,6 +1,7 @@
 import { Entity, 
   Column, 
   PrimaryGeneratedColumn, 
+  OneToMany,
   ManyToOne, 
   ManyToMany, 
   JoinTable,
@@ -10,6 +11,7 @@ import { Entity,
  } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Tag } from '../tags/tag.entity';
+import { ReportImage } from './entities/report-image.entity';
 @Entity()
 export class Report {
   @PrimaryGeneratedColumn()
@@ -30,10 +32,10 @@ export class Report {
   @Column()
   year: number;
 
-  @Column('numeric', { precision: 10, scale: 6 })  // ✅ Changed from integer to numeric
+  @Column('numeric', { precision: 10, scale: 6 })  // Changed from integer to numeric
   lng: number;
 
-  @Column('numeric', { precision: 10, scale: 6 })  // ✅ Changed from integer to numeric
+  @Column('numeric', { precision: 10, scale: 6 })  // Changed from integer to numeric
   lat: number;
 
   @Column()
@@ -68,4 +70,7 @@ export class Report {
     inverseJoinColumn: { name: 'tagId', referencedColumnName: 'id' },
   })
   tags: Tag[];
+  
+  @OneToMany(() => ReportImage, (image) => image.report, { cascade: true })
+  images: ReportImage[];
 }

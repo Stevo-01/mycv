@@ -8,12 +8,15 @@ import { User } from '../users/user.entity';
 import { GetEstimateDto } from './dtos/get-estimate.dto';
 import { SearchReportDto } from './dtos/search-report.dto';
 import { PaginatedResponseDto } from '../common/dto/pagination.dto';
+import { ReportImage } from './entities/report-image.entity';
 
 @Injectable()
 export class ReportsService {
   constructor(
     @InjectRepository(Report) private repo: Repository<Report>,
     @InjectRepository(Tag) private tagsRepo: Repository<Tag>,
+    @InjectRepository(ReportImage)
+    private imageRepo: Repository<ReportImage>,
   ) {}
 
   /**
@@ -42,12 +45,10 @@ export class ReportsService {
       .leftJoinAndSelect('report.user', 'user')
       .leftJoinAndSelect('report.tags', 'tags');
 
-    // To handle soft delete
     if (!includeDeleted) {
       queryBuilder.where('report.deletedAt IS NULL');
     }
 
-    // Full-text search across make, model, and tags
     if (q) {
       queryBuilder.andWhere(
         new Brackets(qb => {
@@ -59,17 +60,14 @@ export class ReportsService {
       );
     }
 
-    // Filter by make
     if (make) {
       queryBuilder.andWhere('LOWER(report.make) = LOWER(:make)', { make });
     }
 
-    // Filter by model
     if (model) {
       queryBuilder.andWhere('LOWER(report.model) = LOWER(:model)', { model });
     }
 
-    // Filter by year range
     if (minYear) {
       queryBuilder.andWhere('report.year >= :minYear', { minYear });
     }
@@ -77,7 +75,6 @@ export class ReportsService {
       queryBuilder.andWhere('report.year <= :maxYear', { maxYear });
     }
 
-    // Filter by price range
     if (minPrice !== undefined) {
       queryBuilder.andWhere('report.price >= :minPrice', { minPrice });
     }
@@ -85,31 +82,25 @@ export class ReportsService {
       queryBuilder.andWhere('report.price <= :maxPrice', { maxPrice });
     }
 
-    // Filter by approved status
     if (approved !== undefined) {
       queryBuilder.andWhere('report.approved = :approved', { approved });
     }
 
-    // Filter by tags
     if (tags) {
       const tagArray = tags.split(',').map(t => t.trim());
       queryBuilder.andWhere('tags.name IN (:...tagNames)', { tagNames: tagArray });
     }
 
-    // Sorting
     const allowedSortFields = ['createdAt', 'updatedAt', 'price', 'year', 'mileage', 'make', 'model'];
     const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
     queryBuilder.orderBy(`report.${sortField}`, sortOrder);
 
-    // Adding secondary sort for consistency
     if (sortField !== 'createdAt') {
       queryBuilder.addOrderBy('report.createdAt', 'DESC');
     }
 
-    // Pagination
     queryBuilder.skip((page - 1) * limit).take(limit);
 
-    // Execute query
     const [data, total] = await queryBuilder.getManyAndCount();
 
     return new PaginatedResponseDto(data, total, page, limit);
@@ -135,7 +126,6 @@ export class ReportsService {
     const report = this.repo.create(reportData);
     report.user = user;
 
-    // To handle tags if provided
     if (tags && tags.length > 0) {
       const tagEntities = await Promise.all(
         tags.map(async (tagName) => {
@@ -162,15 +152,11 @@ export class ReportsService {
     return this.repo.save(report);
   }
 
-  /**
-   * With pagination
-   */
   async findAll(searchDto?: SearchReportDto): Promise<PaginatedResponseDto<Report>> {
     if (searchDto && Object.keys(searchDto).length > 0) {
       return this.search(searchDto);
     }
 
-    // Default pagination if no filters
     const page = 1;
     const limit = 10;
     
@@ -190,7 +176,11 @@ export class ReportsService {
     }
     const report = await this.repo.findOne({ 
       where: { id },
-      relations: ['user', 'tags']
+      relations: {
+        user: true,
+        tags: true,
+        images: true,
+      }
     });
     
     if (!report) {
@@ -203,7 +193,6 @@ export class ReportsService {
   async addTags(id: number, tagNames: string[]): Promise<Report> {
     const report = await this.findOne(id);
     
-    // Find or create tags
     const tagEntities = await Promise.all(
       tagNames.map(async (tagName) => {
         let tag = await this.tagsRepo.findOne({ where: { name: tagName } });
@@ -215,7 +204,6 @@ export class ReportsService {
       })
     );
 
-    // To get existing tag IDs to avoid duplicates
     const existingTagIds = new Set(report.tags.map(t => t.id));
     const newTags = tagEntities.filter(t => !existingTagIds.has(t.id));
     
@@ -226,23 +214,16 @@ export class ReportsService {
   async removeTags(id: number, tagNames: string[]): Promise<Report> {
     const report = await this.findOne(id);
     
-    // Filter out tags by name
     report.tags = report.tags.filter(tag => !tagNames.includes(tag.name));
     
     return this.repo.save(report);
   }
 
-  /**
-   * Soft delete
-   */
   async remove(id: number): Promise<Report> {
     const report = await this.findOne(id);
     return this.repo.softRemove(report);
   }
 
-  /**
-   * Restore soft-deleted report
-   */
   async restore(id: number): Promise<Report> {
     const report = await this.repo.findOne({
       where: { id },
@@ -257,9 +238,6 @@ export class ReportsService {
     return this.repo.recover(report);
   }
 
-  /**
-   * To get deleted reports
-   */
   async findDeleted(): Promise<Report[]> {
     return this.repo
       .createQueryBuilder('report')
@@ -268,5 +246,53 @@ export class ReportsService {
       .withDeleted()
       .where('report.deletedAt IS NOT NULL')
       .getMany();
+  }
+
+  // ==========================================
+  // IMAGE METHODS
+  // ==========================================
+
+  async createImage(
+    reportId: number,
+    filename: string,
+    url: string,
+    originalName: string,
+    size: number,
+    mimeType: string,
+  ): Promise<ReportImage> {
+    const image = this.imageRepo.create({
+      reportId,
+      filename,
+      url,
+      originalName,
+      size,
+      mimeType,
+    });
+    return this.imageRepo.save(image);
+  }
+
+  async findImageById(imageId: number): Promise<ReportImage> {
+    const image = await this.imageRepo.findOne({
+      where: { id: imageId },
+      relations: ['report', 'report.user'],
+    });
+  
+    // Check
+    if (!image) {
+      throw new NotFoundException('Image not found');
+    }
+  
+    return image;
+  }
+
+  async deleteImage(imageId: number): Promise<void> {
+    await this.imageRepo.delete(imageId);
+  }
+
+  async getReportImages(reportId: number): Promise<ReportImage[]> {
+    return this.imageRepo.find({
+      where: { reportId },
+      order: { createdAt: 'DESC' },
+    });
   }
 }

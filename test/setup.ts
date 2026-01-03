@@ -1,4 +1,3 @@
-// test/setup.ts
 // Global test setup and utilities
 
 // Increase timeout for integration tests

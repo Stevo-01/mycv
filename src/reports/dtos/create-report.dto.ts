@@ -46,7 +46,7 @@ export class CreateReportDto {
   @Max(1000000)
   price: number;
 
-  // ✅ NEW: Add tags support
+  // Adding tags support
   @ApiPropertyOptional({ 
     example: ['sedan', 'low-mileage', 'clean-title'],
     description: 'Tags for the report',

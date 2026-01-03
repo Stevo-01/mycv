@@ -18,7 +18,9 @@ import { winstonConfig } from './config/logger.config';
 import { HttpLoggerMiddleware } from './common/middleware/http-logger.middleware';
 import { HealthModule } from './health/health.module';
 import { MonitoringTestModule } from './monitoring-test/monitoring-test.module';
+import { ReportImage } from './reports/entities/report-image.entity'; 
 const cookieSession = require('cookie-session');
+
 
 @Module({
   imports: [
@@ -41,7 +43,7 @@ const cookieSession = require('cookie-session');
         username: configService.get('DB_USER') || 'mycv_user',
         password: configService.get('DB_PASSWORD') || 'mycv_password',
         database: configService.get('DB_NAME') || 'mycv_db',
-        entities: [User, Report, Tag],
+        entities: [User, Report, Tag, ReportImage],
         migrations: ['dist/database/migrations/**/*{.ts,.js}'],
         migrationsTableName: 'migrations',
         synchronize: false,
@@ -82,7 +84,7 @@ export class AppModule {
         cookieSession({
           keys: [this.configService.get('COOKIE_KEY')],
         }),
-        // ✅ NEW: HTTP Logger Middleware
+        // HTTP Logger Middleware
         HttpLoggerMiddleware,
       )
       .forRoutes('*');

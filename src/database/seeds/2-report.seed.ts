@@ -8,7 +8,7 @@ export class ReportSeeder {
     const reportRepository = dataSource.getRepository(Report);
     const userRepository = dataSource.getRepository(User);
 
-    console.log('🌱 Seeding reports...');
+    console.log('Seeding reports...');
 
     // Delete all reports using query builder
     await reportRepository.createQueryBuilder().delete().execute();
@@ -17,7 +17,7 @@ export class ReportSeeder {
     const users = await userRepository.find();
 
     if (users.length === 0) {
-      console.log('  ⚠️  No users found. Run user seeder first.');
+      console.log(' No users found. Run user seeder first.');
       return;
     }
 
@@ -32,7 +32,7 @@ export class ReportSeeder {
       totalReports += reportCount;
     }
 
-    console.log(`  ✅ Created ${totalReports} reports across ${users.length} users`);
-    console.log('✅ Report seeding complete!\n');
+    console.log(`  Created ${totalReports} reports across ${users.length} users`);
+    console.log(' Report seeding complete!\n');
   }
 }

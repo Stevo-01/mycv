@@ -208,7 +208,7 @@ describe('UsersService', () => {
     });
   });
 
-  // ✅ FIXED SECTION
+
   describe('findAll with pagination', () => {
     let mockQueryBuilder: any;
 

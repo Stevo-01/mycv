@@ -2,6 +2,7 @@
 .env.test
 
 # compiled output
+/images
 /dist
 /node_modules
 /build

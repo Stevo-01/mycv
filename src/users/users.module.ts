@@ -1,4 +1,3 @@
-// users.module.ts
 import { Module, MiddlewareConsumer, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from './users.controller';

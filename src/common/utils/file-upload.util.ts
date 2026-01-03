@@ -8,7 +8,7 @@ const logger = new Logger('FileUploadUtil');
 
 export class FileUploadUtil {
   /**
-   * Ensure upload directories exist
+   * To Ensuring upload directories exist
    */
   static async ensureUploadDirectories(): Promise<void> {
     const directories = ['uploads/profiles', 'uploads/reports'];

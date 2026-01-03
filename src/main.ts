@@ -10,9 +10,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 
 async function bootstrap() {
-  // Initialize Sentry (optional - only if SENTRY_DSN is set)
-  initSentry();
-
+  
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Using Winston logger instead of default
